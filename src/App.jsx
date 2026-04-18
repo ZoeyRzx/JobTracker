@@ -13,6 +13,7 @@ export default function JobTracker() {
   const [moodToday, setMoodToday] = useState(null);
   const [moodNote, setMoodNote] = useState('');
   const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [editingInterview, setEditingInterview] = useState(null);
   const [globalToast, setGlobalToast] = useState(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [viewingResume, setViewingResume] = useState(null);
@@ -180,10 +181,10 @@ export default function JobTracker() {
     const menuItems = [
       { id: 'dashboard', name: '首页', icon: LayoutDashboard },
       { id: 'applications', name: '申请管理', icon: Briefcase, badge: applications.length },
-      { id: 'funnel', name: '进程管理', icon: TrendingUp },
+      { id: 'funnel', name: '漏斗分析', icon: TrendingUp },
       { id: 'calendar', name: '申请日历', icon: Calendar },
       { id: 'resumes', name: '简历库', icon: FileText, badge: resumeList.length },
-      { id: 'interviews', name: '面经复盘', icon: Lightbulb, badge: interviewList.length },
+      { id: 'interviews', name: '面试复盘', icon: Lightbulb, badge: interviewList.length },
       { id: 'mood', name: '心态记录', icon: Heart },
       { id: 'emails', name: '邮件智能扫描', icon: Mail, badge: emails.filter(e => e.unread).length, badgeColor: 'red' },
     ];
@@ -497,7 +498,7 @@ export default function JobTracker() {
     );
   };
 
-  // ===== 进程管理 =====
+  // ===== 漏斗分析 =====
   const FunnelView = () => {
     const avgDays = { '投递→笔试': 4, '笔试→一面': 7, '一面→二面': 5, '二面→终面': 6, '终面→Offer': 3 };
     const watchedCompanies = [
@@ -511,7 +512,7 @@ export default function JobTracker() {
     return (
       <div className="p-6 space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">进程管理</h1>
+          <h1 className="text-2xl font-bold text-slate-900">漏斗分析</h1>
           <p className="text-sm text-slate-500 mt-1">看清每个阶段的转化率和卡点</p>
         </div>
 
@@ -756,7 +757,7 @@ export default function JobTracker() {
     );
   };
 
-  // ===== 面经复盘 =====
+  // ===== 面试复盘 =====
   const InterviewsView = () => {
     const handleDelete = (id) => {
       if (confirm('确认删除这条面经记录?')) {
@@ -768,7 +769,7 @@ export default function JobTracker() {
       <div className="p-6 space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">面经复盘</h1>
+            <h1 className="text-2xl font-bold text-slate-900">面试复盘</h1>
             <p className="text-sm text-slate-500 mt-1">记录面试问题,沉淀经验</p>
           </div>
           <button onClick={() => setShowInterviewModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
@@ -801,6 +802,9 @@ export default function JobTracker() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded text-xs bg-purple-50 text-purple-700">{iv.questions.length} 题</span>
+                    <button onClick={() => { setEditingInterview(iv); setShowInterviewModal(true); }} className="opacity-0 group-hover:opacity-100 transition p-1 hover:bg-indigo-50 rounded">
+                      <Edit3 className="w-3.5 h-3.5 text-indigo-500" />
+                    </button>
                     <button onClick={() => handleDelete(iv.id)} className="opacity-0 group-hover:opacity-100 transition p-1 hover:bg-red-50 rounded">
                       <Trash2 className="w-3.5 h-3.5 text-red-500" />
                     </button>
@@ -1139,21 +1143,41 @@ export default function JobTracker() {
   };
 
   const InterviewModal = () => {
-    const [form, setForm] = useState({ company: '', round: '一面', date: '2026-04-18', questionsText: '', reflection: '' });
+    const isEdit = !!editingInterview;
+    const [form, setForm] = useState(editingInterview ? {
+      company: editingInterview.company,
+      round: editingInterview.round,
+      date: editingInterview.date,
+      questionsText: editingInterview.questions.join('\n'),
+      reflection: editingInterview.reflection === '暂无反思' ? '' : editingInterview.reflection
+    } : { company: '', round: '一面', date: '2026-04-18', questionsText: '', reflection: '' });
+    const close = () => { setShowInterviewModal(false); setEditingInterview(null); };
     const handleSubmit = () => {
       if (!form.company || !form.questionsText) { showGlobalToast('⚠️ 请填写公司和面试题'); return; }
       const questions = form.questionsText.split('\n').map(q => q.trim()).filter(Boolean);
-      setInterviewList([{ id: Date.now(), company: form.company, round: form.round, date: form.date, questions, reflection: form.reflection || '暂无反思' }, ...interviewList]);
-      setShowInterviewModal(false);
-      showGlobalToast('✅ 面经记录已添加');
+      if (isEdit) {
+        setInterviewList(interviewList.map(i => i.id === editingInterview.id ? {
+          ...i,
+          company: form.company,
+          round: form.round,
+          date: form.date,
+          questions,
+          reflection: form.reflection || '暂无反思'
+        } : i));
+        showGlobalToast('✅ 面经记录已更新');
+      } else {
+        setInterviewList([{ id: Date.now(), company: form.company, round: form.round, date: form.date, questions, reflection: form.reflection || '暂无反思' }, ...interviewList]);
+        showGlobalToast('✅ 面经记录已添加');
+      }
+      close();
     };
     const rounds = ['一面', '二面', '三面', '终面', '群面', '笔试', 'HR面'];
     return (
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowInterviewModal(false)}>
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={close}>
         <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-slate-900">新增面经记录</h2>
-            <button onClick={() => setShowInterviewModal(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            <h2 className="text-lg font-bold text-slate-900">{isEdit ? '编辑面经记录' : '新增面经记录'}</h2>
+            <button onClick={close}><X className="w-5 h-5 text-slate-400" /></button>
           </div>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -1182,8 +1206,8 @@ export default function JobTracker() {
             </div>
           </div>
           <div className="flex items-center gap-2 mt-5">
-            <button onClick={() => setShowInterviewModal(false)} className="flex-1 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">取消</button>
-            <button onClick={handleSubmit} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">保存</button>
+            <button onClick={close} className="flex-1 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">取消</button>
+            <button onClick={handleSubmit} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">{isEdit ? '保存修改' : '保存'}</button>
           </div>
         </div>
       </div>
