@@ -181,7 +181,7 @@ export default function JobTracker() {
     const menuItems = [
       { id: 'dashboard', name: '首页', icon: LayoutDashboard },
       { id: 'applications', name: '申请管理', icon: Briefcase, badge: applications.length },
-      { id: 'funnel', name: '漏斗分析', icon: TrendingUp },
+      { id: 'funnel', name: '进程管理', icon: TrendingUp },
       { id: 'calendar', name: '申请日历', icon: Calendar },
       { id: 'resumes', name: '简历库', icon: FileText, badge: resumeList.length },
       { id: 'interviews', name: '面试复盘', icon: Lightbulb, badge: interviewList.length },
@@ -498,7 +498,7 @@ export default function JobTracker() {
     );
   };
 
-  // ===== 漏斗分析 =====
+  // ===== 进程管理 =====
   const FunnelView = () => {
     const avgDays = { '投递→笔试': 4, '笔试→一面': 7, '一面→二面': 5, '二面→终面': 6, '终面→Offer': 3 };
     const watchedCompanies = [
@@ -512,7 +512,7 @@ export default function JobTracker() {
     return (
       <div className="p-6 space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">漏斗分析</h1>
+          <h1 className="text-2xl font-bold text-slate-900">进程管理</h1>
           <p className="text-sm text-slate-500 mt-1">看清每个阶段的转化率和卡点</p>
         </div>
 
