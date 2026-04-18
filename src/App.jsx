@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { LayoutDashboard, Briefcase, TrendingUp, Calendar, FileText, Lightbulb, Heart, Mail, Plus, Search, X, ChevronRight, AlertCircle, CheckCircle2, Clock, MapPin, ArrowRight, Trash2, Edit3, MoreHorizontal, AlertTriangle, Sparkles, TrendingDown, Users, Target, Award, BookOpen, Smile, Meh } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, Calendar, FileText, Lightbulb, Heart, Mail, Plus, Search, X, ChevronRight, AlertCircle, CheckCircle2, Clock, MapPin, ArrowRight, Trash2, Edit3, MoreHorizontal, AlertTriangle, Sparkles, TrendingDown, Users, Target, Award, BookOpen, Smile, Meh, Upload, Paperclip, Download, Eye } from 'lucide-react';
 
 export default function JobTracker() {
-  // ===== 全部 state 集中在顶部,避免作用域问题 =====
+  // ===== 全部 state 集中在顶部 =====
   const [activeView, setActiveView] = useState('dashboard');
   const [viewMode, setViewMode] = useState('table');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -25,6 +25,7 @@ export default function JobTracker() {
   const [viewingEmail, setViewingEmail] = useState(null);
   const [emailToast, setEmailToast] = useState(null);
   const [resumeMenuId, setResumeMenuId] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
 
   const showGlobalToast = (msg) => {
     setGlobalToast(msg);
@@ -33,6 +34,12 @@ export default function JobTracker() {
   const showEmailToast = (msg) => {
     setEmailToast(msg);
     setTimeout(() => setEmailToast(null), 2200);
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   // ===== 数据 state =====
@@ -52,17 +59,17 @@ export default function JobTracker() {
   ]);
 
   const [resumeList, setResumeList] = useState([
-    { name: '产品版V3', usedBy: 3, interviews: 2, offers: 0, color: '#3B82F6', update: '2天前' },
-    { name: '游戏版V1', usedBy: 2, interviews: 1, offers: 0, color: '#DC2626', update: '1周前' },
-    { name: '数据版V2', usedBy: 2, interviews: 1, offers: 1, color: '#10B981', update: '4天前' },
-    { name: '金融版V4', usedBy: 1, interviews: 1, offers: 0, color: '#EF4444', update: '3天前' },
-    { name: '咨询版V2', usedBy: 1, interviews: 0, offers: 0, color: '#1E40AF', update: '5天前' },
-    { name: '内容版V1', usedBy: 1, interviews: 0, offers: 0, color: '#EC4899', update: '1周前' },
-    { name: '技术版V2', usedBy: 1, interviews: 0, offers: 0, color: '#7C3AED', update: '6天前' },
+    { name: '产品版V3', usedBy: 3, interviews: 2, offers: 0, color: '#3B82F6', update: '2天前', file: null },
+    { name: '游戏版V1', usedBy: 2, interviews: 1, offers: 0, color: '#DC2626', update: '1周前', file: null },
+    { name: '数据版V2', usedBy: 2, interviews: 1, offers: 1, color: '#10B981', update: '4天前', file: null },
+    { name: '金融版V4', usedBy: 1, interviews: 1, offers: 0, color: '#EF4444', update: '3天前', file: null },
+    { name: '咨询版V2', usedBy: 1, interviews: 0, offers: 0, color: '#1E40AF', update: '5天前', file: null },
+    { name: '内容版V1', usedBy: 1, interviews: 0, offers: 0, color: '#EC4899', update: '1周前', file: null },
+    { name: '技术版V2', usedBy: 1, interviews: 0, offers: 0, color: '#7C3AED', update: '6天前', file: null },
   ]);
 
   const [interviewList, setInterviewList] = useState([
-    { id: 1, company: '字节跳动', round: '一面', date: '2026-04-15', questions: ['自我介绍3分钟', '最有成就感的项目', '如何看待抖音和小红书的差异', '对推荐算法的理解', '职业规划'], reflection: '项目细节准备充分,但对竞品分析深度不够,需要加强行业洞察' },
+    { id: 1, company: '美团', round: '一面', date: '2026-04-15', questions: ['自我介绍3分钟', '最有成就感的项目', '对推荐算法的理解', '职业规划'], reflection: '项目细节准备充分,但对竞品分析深度不够,需要加强行业洞察' },
     { id: 2, company: '百度', round: '二面', date: '2026-04-12', questions: ['AI产品和传统产品的区别', '如何设计一个ChatGPT', 'PM如何与算法工程师协作', '用户增长案例分析'], reflection: 'AI相关概念回答不够深入,需要系统学习LLM基础知识' },
     { id: 3, company: '中金公司', round: '群面', date: '2026-04-10', questions: ['估算中国奶茶市场规模', '并购案例讨论', '时间管理问题'], reflection: '估算逻辑清晰,但表达不够简洁,被队友抢了leader位' },
     { id: 4, company: '阿里巴巴', round: '二面', date: '2026-04-13', questions: ['淘宝首页改版建议', '电商用户分层', '手淘vs天猫定位', '双11运营策略'], reflection: '对电商业务理解不错,但缺乏数据支撑' },
@@ -107,7 +114,6 @@ export default function JobTracker() {
     '材料补充': { bg: '#F3E8FF', text: '#6B21A8' },
   };
 
-  // ===== 计算派生数据 =====
   const stats = useMemo(() => {
     const total = applications.length;
     const offers = applications.filter(a => a.status === 'Offer').length;
@@ -137,7 +143,35 @@ export default function JobTracker() {
       .sort((a, b) => a.daysLeft - b.daysLeft);
   }, [applications]);
 
-  // ===== 事件处理函数 =====
+  // ===== 文件上传处理 =====
+  const handleFileUpload = (resumeName, file) => {
+    if (!file) return;
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      showGlobalToast('⚠️ 文件不能超过 10MB');
+      return;
+    }
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/png', 'image/jpeg'];
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|png|jpg|jpeg)$/i)) {
+      showGlobalToast('⚠️ 仅支持 PDF / Word / 图片');
+      return;
+    }
+    const fileUrl = URL.createObjectURL(file);
+    setResumeList(resumeList.map(r => r.name === resumeName ? {
+      ...r,
+      file: { name: file.name, size: file.size, type: file.type, url: fileUrl, uploadedAt: '刚刚' },
+      update: '刚刚'
+    } : r));
+    showGlobalToast(`✅ 已上传「${file.name}」`);
+  };
+
+  const handleRemoveFile = (resumeName) => {
+    if (confirm('确认移除已上传的附件?')) {
+      setResumeList(resumeList.map(r => r.name === resumeName ? { ...r, file: null } : r));
+      showGlobalToast('✅ 附件已移除');
+    }
+  };
+
   const handleAddToCalendar = (email) => {
     setProcessedEmails({ ...processedEmails, [email.id]: { ...processedEmails[email.id], calendar: true } });
     showEmailToast(`✅ 已加入日历:${email.extracted.date}`);
@@ -232,7 +266,6 @@ export default function JobTracker() {
     );
   };
 
-  // ===== 紧急横幅 =====
   const UrgentBanner = () => {
     const urgent = upcomingTasks.filter(t => t.daysLeft <= 3).slice(0, 3);
     if (urgent.length === 0) return null;
@@ -706,12 +739,19 @@ export default function JobTracker() {
       }
     };
     const companiesUsing = (name) => applications.filter(a => a.resumeVersion === name);
+    const getFileIconColor = (file) => {
+      if (!file) return '#94A3B8';
+      if (file.type.includes('pdf') || file.name.endsWith('.pdf')) return '#EF4444';
+      if (file.type.includes('word') || file.name.match(/\.(doc|docx)$/i)) return '#3B82F6';
+      if (file.type.includes('image')) return '#10B981';
+      return '#64748B';
+    };
     return (
       <div className="p-6 space-y-5" onClick={() => setResumeMenuId(null)}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">简历库</h1>
-            <p className="text-sm text-slate-500 mt-1">多版本简历管理与效果追踪</p>
+            <p className="text-sm text-slate-500 mt-1">多版本简历管理与效果追踪 · 支持上传 PDF/Word/图片附件</p>
           </div>
           <button onClick={() => setShowResumeModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
             <Plus className="w-4 h-4" />新建版本
@@ -722,10 +762,12 @@ export default function JobTracker() {
           {resumeList.map((r, i) => {
             const passRate = r.usedBy > 0 ? ((r.interviews / r.usedBy) * 100).toFixed(0) : 0;
             return (
-              <div key={i} onClick={() => setViewingResume(r)} className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-indigo-200 transition cursor-pointer relative">
+              <div key={i} className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-indigo-200 transition relative">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: r.color + '20' }}>
-                    <FileText className="w-5 h-5" style={{ color: r.color }} />
+                  <div onClick={() => setViewingResume(r)} className="flex-1 cursor-pointer">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: r.color + '20' }}>
+                      <FileText className="w-5 h-5" style={{ color: r.color }} />
+                    </div>
                   </div>
                   <button onClick={(e) => { e.stopPropagation(); setResumeMenuId(resumeMenuId === i ? null : i); }} className="p-1 hover:bg-slate-100 rounded">
                     <MoreHorizontal className="w-4 h-4 text-slate-400" />
@@ -738,16 +780,46 @@ export default function JobTracker() {
                     </div>
                   )}
                 </div>
-                <div className="font-semibold text-slate-900 mb-1">{r.name}</div>
-                <div className="text-xs text-slate-500 mb-4">更新于 {r.update}</div>
-                <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100">
-                  <div><div className="text-[10px] text-slate-500">投递</div><div className="text-sm font-bold text-slate-900">{r.usedBy}</div></div>
-                  <div><div className="text-[10px] text-slate-500">面试</div><div className="text-sm font-bold text-indigo-600">{r.interviews}</div></div>
-                  <div><div className="text-[10px] text-slate-500">Offer</div><div className="text-sm font-bold text-emerald-600">{r.offers}</div></div>
+                <div onClick={() => setViewingResume(r)} className="cursor-pointer">
+                  <div className="font-semibold text-slate-900 mb-1">{r.name}</div>
+                  <div className="text-xs text-slate-500 mb-3">更新于 {r.update}</div>
                 </div>
-                <div className="mt-3 text-xs">
-                  <span className="text-slate-500">面试转化 </span>
-                  <span className={`font-semibold ${passRate > 50 ? 'text-emerald-600' : 'text-amber-600'}`}>{passRate}%</span>
+
+                {/* 附件区域 */}
+                <div className="mb-3 pb-3 border-b border-slate-100">
+                  {r.file ? (
+                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg group/file">
+                      <Paperclip className="w-3.5 h-3.5 flex-shrink-0" style={{ color: getFileIconColor(r.file) }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-slate-700 truncate">{r.file.name}</div>
+                        <div className="text-[10px] text-slate-400">{formatFileSize(r.file.size)}</div>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); setPreviewFile(r.file); }} className="p-1 hover:bg-white rounded opacity-0 group-hover/file:opacity-100 transition">
+                        <Eye className="w-3 h-3 text-slate-500" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleRemoveFile(r.name); }} className="p-1 hover:bg-white rounded opacity-0 group-hover/file:opacity-100 transition">
+                        <X className="w-3 h-3 text-red-400" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center gap-1.5 py-2 border border-dashed border-slate-300 rounded-lg text-xs text-slate-500 hover:border-indigo-400 hover:text-indigo-500 cursor-pointer transition">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>上传附件</span>
+                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onChange={(e) => handleFileUpload(r.name, e.target.files[0])} onClick={e => e.stopPropagation()} />
+                    </label>
+                  )}
+                </div>
+
+                <div onClick={() => setViewingResume(r)} className="cursor-pointer">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div><div className="text-[10px] text-slate-500">投递</div><div className="text-sm font-bold text-slate-900">{r.usedBy}</div></div>
+                    <div><div className="text-[10px] text-slate-500">面试</div><div className="text-sm font-bold text-indigo-600">{r.interviews}</div></div>
+                    <div><div className="text-[10px] text-slate-500">Offer</div><div className="text-sm font-bold text-emerald-600">{r.offers}</div></div>
+                  </div>
+                  <div className="mt-3 text-xs">
+                    <span className="text-slate-500">面试转化 </span>
+                    <span className={`font-semibold ${passRate > 50 ? 'text-emerald-600' : 'text-amber-600'}`}>{passRate}%</span>
+                  </div>
                 </div>
               </div>
             );
@@ -760,9 +832,9 @@ export default function JobTracker() {
   // ===== 面试复盘 =====
   const InterviewsView = () => {
     const handleDelete = (id) => {
-      if (confirm('确认删除这条面经记录?')) {
+      if (confirm('确认删除这条面试复盘记录?')) {
         setInterviewList(interviewList.filter(i => i.id !== id));
-        showGlobalToast('✅ 已删除面经记录');
+        showGlobalToast('✅ 已删除面试复盘记录');
       }
     };
     return (
@@ -772,7 +844,7 @@ export default function JobTracker() {
             <h1 className="text-2xl font-bold text-slate-900">面试复盘</h1>
             <p className="text-sm text-slate-500 mt-1">记录面试问题,沉淀经验</p>
           </div>
-          <button onClick={() => setShowInterviewModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+          <button onClick={() => { setEditingInterview(null); setShowInterviewModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
             <Plus className="w-4 h-4" />新增记录
           </button>
         </div>
@@ -781,7 +853,7 @@ export default function JobTracker() {
           {interviewList.length === 0 && (
             <div className="bg-white border border-dashed border-slate-300 rounded-xl p-8 text-center">
               <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">还没有面经记录,点击右上角新增第一条</p>
+              <p className="text-sm text-slate-500">还没有面试复盘记录,点击右上角新增第一条</p>
             </div>
           )}
           {interviewList.map(iv => {
@@ -1157,17 +1229,13 @@ export default function JobTracker() {
       const questions = form.questionsText.split('\n').map(q => q.trim()).filter(Boolean);
       if (isEdit) {
         setInterviewList(interviewList.map(i => i.id === editingInterview.id ? {
-          ...i,
-          company: form.company,
-          round: form.round,
-          date: form.date,
-          questions,
+          ...i, company: form.company, round: form.round, date: form.date, questions,
           reflection: form.reflection || '暂无反思'
         } : i));
-        showGlobalToast('✅ 面经记录已更新');
+        showGlobalToast('✅ 面试复盘已更新');
       } else {
         setInterviewList([{ id: Date.now(), company: form.company, round: form.round, date: form.date, questions, reflection: form.reflection || '暂无反思' }, ...interviewList]);
-        showGlobalToast('✅ 面经记录已添加');
+        showGlobalToast('✅ 面试复盘已添加');
       }
       close();
     };
@@ -1176,7 +1244,7 @@ export default function JobTracker() {
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={close}>
         <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-slate-900">{isEdit ? '编辑面经记录' : '新增面经记录'}</h2>
+            <h2 className="text-lg font-bold text-slate-900">{isEdit ? '编辑面试复盘' : '新增面试复盘'}</h2>
             <button onClick={close}><X className="w-5 h-5 text-slate-400" /></button>
           </div>
           <div className="space-y-3">
@@ -1221,7 +1289,7 @@ export default function JobTracker() {
     const handleCreate = () => {
       if (!name.trim()) { showGlobalToast('⚠️ 请输入版本名称'); return; }
       if (resumeList.some(r => r.name === name)) { showGlobalToast('⚠️ 该版本名称已存在'); return; }
-      setResumeList([...resumeList, { name, usedBy: 0, interviews: 0, offers: 0, color, update: '刚刚' }]);
+      setResumeList([...resumeList, { name, usedBy: 0, interviews: 0, offers: 0, color, update: '刚刚', file: null }]);
       setShowResumeModal(false);
       showGlobalToast('✅ 简历版本已创建');
     };
@@ -1248,7 +1316,7 @@ export default function JobTracker() {
             </div>
             <div className="text-xs text-slate-500 bg-indigo-50 rounded-lg p-2.5 flex items-start gap-2">
               <Lightbulb className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0 mt-0.5" />
-              <span>创建后,在「新增申请」时可以选择这个版本,系统会自动统计它的投递/面试/Offer数据</span>
+              <span>创建后,可上传 PDF/Word/图片 作为附件;新增申请时可选择此版本,系统会自动统计投递/面试/Offer数据</span>
             </div>
           </div>
           <div className="flex items-center gap-2 mt-5">
@@ -1278,6 +1346,21 @@ export default function JobTracker() {
             </div>
             <button onClick={() => setViewingResume(null)}><X className="w-5 h-5 text-slate-400" /></button>
           </div>
+
+          {r.file && (
+            <div className="mb-4 p-3 bg-slate-50 rounded-lg">
+              <div className="text-xs font-medium text-slate-500 mb-2">简历附件</div>
+              <div className="flex items-center gap-2">
+                <Paperclip className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-slate-900 truncate">{r.file.name}</div>
+                  <div className="text-[10px] text-slate-400">{formatFileSize(r.file.size)} · {r.file.uploadedAt}</div>
+                </div>
+                <button onClick={() => setPreviewFile(r.file)} className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">预览</button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="bg-slate-50 rounded-lg p-3 text-center"><div className="text-[10px] text-slate-500 mb-1">投递</div><div className="text-xl font-bold text-slate-900">{r.usedBy}</div></div>
             <div className="bg-slate-50 rounded-lg p-3 text-center"><div className="text-[10px] text-slate-500 mb-1">面试</div><div className="text-xl font-bold text-indigo-600">{r.interviews}</div></div>
@@ -1298,6 +1381,50 @@ export default function JobTracker() {
               </div>
             ) : (
               <div className="text-xs text-slate-400 text-center py-4 bg-slate-50 rounded-lg">暂无申请使用此版本</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 文件预览弹窗
+  const FilePreviewModal = () => {
+    const f = previewFile;
+    const isImage = f.type.startsWith('image/') || /\.(png|jpg|jpeg)$/i.test(f.name);
+    const isPdf = f.type === 'application/pdf' || f.name.endsWith('.pdf');
+    return (
+      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[55] flex items-center justify-center p-4" onClick={() => setPreviewFile(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-4 border-b border-slate-100">
+            <div className="flex items-center gap-2 min-w-0">
+              <Paperclip className="w-4 h-4 text-slate-500 flex-shrink-0" />
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-slate-900 truncate">{f.name}</div>
+                <div className="text-[10px] text-slate-400">{formatFileSize(f.size)}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a href={f.url} download={f.name} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700">
+                <Download className="w-3 h-3" />下载
+              </a>
+              <button onClick={() => setPreviewFile(null)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-auto p-4 bg-slate-50 flex items-center justify-center">
+            {isImage ? (
+              <img src={f.url} alt={f.name} className="max-w-full max-h-full object-contain rounded shadow" />
+            ) : isPdf ? (
+              <iframe src={f.url} title={f.name} className="w-full h-[70vh] rounded shadow bg-white" />
+            ) : (
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 text-slate-300 mx-auto mb-3" />
+                <div className="text-sm text-slate-600 mb-2">该文件类型暂不支持在线预览</div>
+                <div className="text-xs text-slate-400 mb-4">点击右上角「下载」查看文件内容</div>
+                <a href={f.url} download={f.name} className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+                  <Download className="w-4 h-4" />下载文件
+                </a>
+              </div>
             )}
           </div>
         </div>
@@ -1488,7 +1615,7 @@ ${e.company.replace('(未录入)', '')}招聘团队`}
                   <button onClick={() => { setEditingApp(selectedApp); setShowAddModal(true); setSelectedApp(null); }} className="p-2 border border-slate-200 rounded-lg text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-1">
                     <Edit3 className="w-3.5 h-3.5" />编辑
                   </button>
-                  <button onClick={() => { setActiveView('interviews'); setShowInterviewModal(true); setSelectedApp(null); showGlobalToast(`📝 为「${selectedApp.company}」添加面经`); }} className="p-2 border border-slate-200 rounded-lg text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-1">
+                  <button onClick={() => { setActiveView('interviews'); setEditingInterview(null); setShowInterviewModal(true); setSelectedApp(null); showGlobalToast(`📝 为「${selectedApp.company}」添加面试复盘`); }} className="p-2 border border-slate-200 rounded-lg text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-1">
                     <BookOpen className="w-3.5 h-3.5" />添加面经
                   </button>
                   <button onClick={() => { if (confirm(`确认删除「${selectedApp.company}」的申请?`)) { setApplications(applications.filter(a => a.id !== selectedApp.id)); setSelectedApp(null); showGlobalToast('✅ 已删除申请记录'); } }} className="p-2 border border-red-200 rounded-lg text-xs text-red-600 hover:bg-red-50 flex items-center justify-center gap-1">
@@ -1528,6 +1655,7 @@ ${e.company.replace('(未录入)', '')}招聘团队`}
       {showWatchModal && <WatchModal />}
       {viewingCompanyJobs && <CompanyJobsModal />}
       {viewingEmail && <EmailDetailModal />}
+      {previewFile && <FilePreviewModal />}
       {selectedApp && <DetailDrawer />}
     </div>
   );
